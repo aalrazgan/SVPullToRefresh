@@ -16,6 +16,8 @@ These UIScrollView categories makes it super easy to add pull-to-refresh and inf
 
 Add `pod 'SVPullToRefresh'` to your Podfile or `pod 'SVPullToRefresh', :head` if you're feeling adventurous.
 
+To add this fork `pod 'SVPullToRefresh', :git => 'https://github.com/aalrazgan/SVPullToRefresh.git'`
+
 ### Manually
 
 _**Important note if your project doesn't use ARC**: you must add the `-fobjc-arc` compiler flag to `UIScrollView+SVPullToRefresh.m` and `UIScrollView+SVInfiniteScrolling.m` in Target Settings > Build Phases > Compile Sources._
