@@ -1,5 +1,7 @@
 # SVPullToRefresh + SVInfiniteScrolling
 
+> This fork adds the ability to do an Infinite scroll from the top.
+
 These UIScrollView categories makes it super easy to add pull-to-refresh and infinite scrolling fonctionalities to any UIScrollView (or any of its subclass). Instead of relying on delegates and/or subclassing `UIViewController`, SVPullToRefresh uses the Objective-C runtime to add the following 3 methods to `UIScrollView`:
 
 ```objective-c
@@ -84,6 +86,14 @@ tableView.pullToRefreshView.arrowColor = [UIColor whiteColor];
     // append data to data source, insert new cells at the end of table view
     // call [tableView.infiniteScrollingView stopAnimating] when done
 }];
+```
+Infinite scroll from the top
+
+```objective-c
+[tableView addInfiniteScrollingWithActionHandler:^{
+    // append data to data source, insert new cells at the end of table view
+    // call [tableView.infiniteScrollingView stopAnimating] when done
+} direction:SVInfiniteScrollingDirectionTop]];
 ```
 
 If you’d like to programmatically trigger the loading (for instance in `viewDidAppear:`), you can do so with:

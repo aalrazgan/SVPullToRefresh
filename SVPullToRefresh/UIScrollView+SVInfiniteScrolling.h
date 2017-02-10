@@ -13,7 +13,14 @@
 
 @interface UIScrollView (SVInfiniteScrolling)
 
+enum {
+    SVInfiniteScrollingDirectionBottom = 0,
+    SVInfiniteScrollingDirectionTop,
+};
+typedef NSUInteger SVInfiniteScrollingDirection;
+
 - (void)addInfiniteScrollingWithActionHandler:(void (^)(void))actionHandler;
+- (void)addInfiniteScrollingWithActionHandler:(void (^)(void))actionHandler direction:(SVInfiniteScrollingDirection)direction;
 - (void)triggerInfiniteScrolling;
 
 @property (nonatomic, strong, readonly) SVInfiniteScrollingView *infiniteScrollingView;
