@@ -19,4 +19,6 @@ Pod::Spec.new do |s|
   s.source_files = 'SVPullToRefresh/*.{h,m}'
   s.preserve_paths  = 'Demo'
   s.requires_arc = true
+
+  s.dependency 'Agamotto'
 end
