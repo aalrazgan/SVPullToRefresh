@@ -25,6 +25,7 @@ typedef NSUInteger SVInfiniteScrollingDirection;
 
 @property (nonatomic, strong, readonly) SVInfiniteScrollingView *infiniteScrollingView;
 @property (nonatomic, assign) BOOL showsInfiniteScrolling;
+@property (nonatomic, assign) CGFloat infiniteScrollTriggerOffset;
 
 @end
 
