@@ -1,6 +1,6 @@
 # SVPullToRefresh + SVInfiniteScrolling
 
-> This fork adds the ability to do an Infinite scroll from the top.
+> This fork adds the ability to do an Infinite scroll from the top. It also allows for seamless preload content without showing a spinner. It currently relies on [Agamotto](https://github.com/Kosoku/Agamotto) to allow for blocked based extensions. For UICollectionView, make sure to use UICollectionView.performBatchUpdates when possible as it causes contentOffset to reset.
 
 These UIScrollView categories makes it super easy to add pull-to-refresh and infinite scrolling fonctionalities to any UIScrollView (or any of its subclass). Instead of relying on delegates and/or subclassing `UIViewController`, SVPullToRefresh uses the Objective-C runtime to add the following 3 methods to `UIScrollView`:
 
@@ -8,15 +8,20 @@ These UIScrollView categories makes it super easy to add pull-to-refresh and inf
 - (void)addPullToRefreshWithActionHandler:(void (^)(void))actionHandler;
 - (void)addPullToRefreshWithActionHandler:(void (^)(void))actionHandler position:(SVPullToRefreshPosition)position;
 - (void)addInfiniteScrollingWithActionHandler:(void (^)(void))actionHandler;
+- (void)addInfiniteScrollingWithActionHandler:(void (^)(void))actionHandler direction:(SVInfiniteScrollingDirection)direction;
 ```
 
 ## Installation
 
 ### From CocoaPods
 
-Add `pod 'SVPullToRefresh'` to your Podfile or `pod 'SVPullToRefresh', :head` if you're feeling adventurous.
-
 To add this fork `pod 'SVPullToRefresh', :git => 'https://github.com/aalrazgan/SVPullToRefresh.git'`
+
+### Dependencies
+
+Third party:
+
+- [Agamotto](https://github.com/Kosoku/Agamotto)
 
 ### Manually
 
@@ -93,7 +98,7 @@ Infinite scroll from the top
 
 ```objective-c
 [tableView addInfiniteScrollingWithActionHandler:^{
-    // append data to data source, insert new cells at the end of table view
+    // append data to data source, insert new cells at the top of table view
     // call [tableView.infiniteScrollingView stopAnimating] when done
 } direction:SVInfiniteScrollingDirectionTop]];
 ```
@@ -110,6 +115,31 @@ You can temporarily hide the infinite scrolling view by setting the `showsInfini
 tableView.showsInfiniteScrolling = NO;
 ```
 
+### CollectionView Note
+
+UICollectionView.reloadData causes contentOffset to reset. Instead use UICollectionView.performBatchUpdates when possible.
+
+```objective-c
+[collectionView addInfiniteScrollingWithActionHandler:^{
+    [collectionView performBatchUpdates:^{
+        // update collection view
+    } completion:^(BOOL finished) {
+        // finish infinite scroll animations
+        [collectionView.infiniteScrollingView stopAnimating]
+    }];
+}];
+```
+
+### Seamless preload content
+
+Ideally you want your content to flow seamlessly without ever showing a spinner. Infinite scroll offers an option to specify offset in points that will be used to start preloader before user reaches the bottom of scroll view.
+
+The proper balance between the number of results you load each time and large enough offset should give your users a decent experience. Most likely you will have to come up with your own formula for the combination of those based on kind of content and device dimensions.
+
+```objective-c
+// Preload more data 500pt before reaching the bottom of scroll view.
+tableView.infiniteScrollTriggerOffset = 500;
+```
 #### Customization
 
 The infinite scrolling view can be customized using the following methods:
