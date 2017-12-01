@@ -280,15 +280,16 @@ static char UIScrollViewPullToRefreshView;
         NSString *subtitle = [self.subtitles objectAtIndex:self.state];
         self.subtitleLabel.text = subtitle.length > 0 ? subtitle : nil;
         
+        NSAttributedString *titleAttributedText = [[NSAttributedString alloc] initWithString:self.titleLabel.text attributes:@{NSFontAttributeName: self.titleLabel.font}];
+        CGSize titleSize = [titleAttributedText boundingRectWithSize:(CGSize){labelMaxWidth, CGFLOAT_MAX} options:NSStringDrawingUsesLineFragmentOrigin context:nil].size;
         
-        CGSize titleSize = [self.titleLabel.text sizeWithFont:self.titleLabel.font
-                                            constrainedToSize:CGSizeMake(labelMaxWidth,self.titleLabel.font.lineHeight)
-                                                lineBreakMode:self.titleLabel.lineBreakMode];
-        
-        
-        CGSize subtitleSize = [self.subtitleLabel.text sizeWithFont:self.subtitleLabel.font
-                                                  constrainedToSize:CGSizeMake(labelMaxWidth,self.subtitleLabel.font.lineHeight)
-                                                      lineBreakMode:self.subtitleLabel.lineBreakMode];
+        CGSize subtitleSize;
+        if(self.subtitleLabel.text.length > 0) {
+            NSAttributedString *subTitleAttributedText = [[NSAttributedString alloc] initWithString:self.subtitleLabel.text attributes:@{NSFontAttributeName : self.subtitleLabel.font}];
+            subtitleSize = [subTitleAttributedText boundingRectWithSize:(CGSize){labelMaxWidth, CGFLOAT_MAX} options:NSStringDrawingUsesLineFragmentOrigin context:nil].size;
+        } else {
+            subtitleSize = CGSizeMake(0, 0);
+        }
         
         CGFloat maxLabelWidth = MAX(titleSize.width,subtitleSize.width);
         
