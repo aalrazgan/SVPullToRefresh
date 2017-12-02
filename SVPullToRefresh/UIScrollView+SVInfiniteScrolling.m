@@ -49,8 +49,17 @@ static CGFloat const SVInfiniteScrollingViewHeight = 60;
 #pragma mark - UIScrollView (SVInfiniteScrollingView)
 #import <objc/runtime.h>
 
-static char UIScrollViewInfiniteScrollingView;
+static char UIScrollViewInfiniteScrollingBottomView;
+static char UIScrollViewInfiniteScrollingTopView;
+
 UIEdgeInsets scrollViewOriginalContentInsets;
+
+@interface UIScrollView ()
+@property (nonatomic, strong, readwrite) SVInfiniteScrollingView *infiniteScrollingView;
+@property (nonatomic, strong) SVInfiniteScrollingView *infiniteScrollingTopView;
+@property (nonatomic, strong) SVInfiniteScrollingView *infiniteScrollingBottomView;
+@property (nonatomic, assign) SVInfiniteScrollingDirection currentDirection;
+@end
 
 @implementation UIScrollView (SVInfiniteScrolling)
 
@@ -63,7 +72,7 @@ UIEdgeInsets scrollViewOriginalContentInsets;
 
 - (void)addInfiniteScrollingWithActionHandler:(void (^)(void))actionHandler direction:(SVInfiniteScrollingDirection)direction {
     
-    if(!self.infiniteScrollingView) {
+    if(!self.infiniteScrollingView || (self.infiniteScrollingView.direction != direction)) {
         
         CGFloat yOrigin = 0;
         switch (direction) {
@@ -88,21 +97,45 @@ UIEdgeInsets scrollViewOriginalContentInsets;
     }
 }
 
-- (void)triggerInfiniteScrolling {
+- (void)triggerInfiniteScrolling {    
     self.infiniteScrollingView.state = SVInfiniteScrollingStateTriggered;
     [self.infiniteScrollingView startAnimating];
 }
 
 - (void)setInfiniteScrollingView:(SVInfiniteScrollingView *)infiniteScrollingView {
-    [self willChangeValueForKey:@"UIScrollViewInfiniteScrollingView"];
-    objc_setAssociatedObject(self, &UIScrollViewInfiniteScrollingView,
-                             infiniteScrollingView,
-                             OBJC_ASSOCIATION_ASSIGN);
-    [self didChangeValueForKey:@"UIScrollViewInfiniteScrollingView"];
+    [self setInfiniteScrollingView:infiniteScrollingView direction:infiniteScrollingView.direction];
 }
 
 - (SVInfiniteScrollingView *)infiniteScrollingView {
-    return objc_getAssociatedObject(self, &UIScrollViewInfiniteScrollingView);
+    switch (self.currentDirection) {
+        case SVInfiniteScrollingDirectionTop:
+            return objc_getAssociatedObject(self, &UIScrollViewInfiniteScrollingTopView);
+        case SVInfiniteScrollingDirectionBottom:
+        default:
+            return objc_getAssociatedObject(self, &UIScrollViewInfiniteScrollingBottomView);
+    }
+}
+
+- (void)setInfiniteScrollingView:(SVInfiniteScrollingView *)infiniteScrollingView direction:(SVInfiniteScrollingDirection)direction {
+    self.currentDirection = direction;
+    switch (direction) {
+        case SVInfiniteScrollingDirectionBottom:
+            self.infiniteScrollingBottomView = infiniteScrollingView;
+            break;
+        case SVInfiniteScrollingDirectionTop:
+            self.infiniteScrollingTopView = infiniteScrollingView;
+            break;
+    }
+}
+
+- (SVInfiniteScrollingView *)infiniteScrollingViewForDirection:(SVInfiniteScrollingDirection)direction {
+    switch (direction) {
+        case SVInfiniteScrollingDirectionTop:
+            return self.infiniteScrollingTopView;
+        case SVInfiniteScrollingDirectionBottom:
+        default:
+            return self.infiniteScrollingBottomView;
+    }
 }
 
 - (void)setShowsInfiniteScrolling:(BOOL)showsInfiniteScrolling {
@@ -112,8 +145,8 @@ UIEdgeInsets scrollViewOriginalContentInsets;
     self.infiniteScrollingView.hidden = !showsInfiniteScrolling;
     
     if(!showsInfiniteScrolling) {
+        [self.infiniteScrollingView resetScrollViewContentInset];
         if (self.infiniteScrollingView.isObserving) {
-            [self.infiniteScrollingView resetScrollViewContentInset];
             self.infiniteScrollingView.isObserving = NO;
         }
     }
@@ -148,7 +181,36 @@ UIEdgeInsets scrollViewOriginalContentInsets;
     if(!self.infiniteScrollingView)
         return;
     
+    self.infiniteScrollingView = [self infiniteScrollingViewForDirection:SVInfiniteScrollingDirectionBottom];
     self.infiniteScrollingView.triggerOffset = infiniteScrollTriggerOffset;
+}
+
+- (void)setInfiniteScrollingBottomView:(SVInfiniteScrollingView *)infiniteScrollingBottomView {
+    [self willChangeValueForKey:@"UIScrollViewInfiniteScrollingBottomView"];
+    objc_setAssociatedObject(self, &UIScrollViewInfiniteScrollingBottomView, infiniteScrollingBottomView, OBJC_ASSOCIATION_ASSIGN);
+    [self didChangeValueForKey:@"UIScrollViewInfiniteScrollingBottomView"];
+}
+
+- (SVInfiniteScrollingView *)infiniteScrollingBottomView {
+    return objc_getAssociatedObject(self, &UIScrollViewInfiniteScrollingBottomView);
+}
+
+- (void)setInfiniteScrollingTopView:(SVInfiniteScrollingView *)infiniteScrollingTopView {
+    [self willChangeValueForKey:@"UIScrollViewInfiniteScrollingTopView"];
+    objc_setAssociatedObject(self, &UIScrollViewInfiniteScrollingTopView, infiniteScrollingTopView, OBJC_ASSOCIATION_ASSIGN);
+    [self didChangeValueForKey:@"UIScrollViewInfiniteScrollingTopView"];
+}
+
+- (SVInfiniteScrollingView *)infiniteScrollingTopView {
+    return objc_getAssociatedObject(self, &UIScrollViewInfiniteScrollingTopView);
+}
+
+- (void)setCurrentDirection:(SVInfiniteScrollingDirection)currentDirection {
+    objc_setAssociatedObject(self, @selector(currentDirection), @(currentDirection), OBJC_ASSOCIATION_ASSIGN);
+}
+
+- (SVInfiniteScrollingDirection)currentDirection {
+    return [(NSNumber *)objc_getAssociatedObject(self, @selector(currentDirection)) intValue];
 }
 
 @end
@@ -230,7 +292,22 @@ UIEdgeInsets scrollViewOriginalContentInsets;
 - (void)addScrollViewObservers {
     [self.scrollView KAG_addObserverForKeyPaths:@[@kstKeypath(self.scrollView,contentOffset), @kstKeypath(self.scrollView,contentSize)] options:NSKeyValueObservingOptionNew block:^(NSString * _Nonnull keyPath, id  _Nullable value, NSDictionary<NSKeyValueChangeKey,id> * _Nonnull change) {
         if([keyPath isEqualToString:@kstKeypath(self.scrollView,contentOffset)]) {
-            [self scrollViewDidScroll:[[change valueForKey:NSKeyValueChangeNewKey] CGPointValue]];
+            CGPoint newPoint = [[change valueForKey:NSKeyValueChangeNewKey] CGPointValue];
+            switch (self.direction) {
+                case SVInfiniteScrollingDirectionBottom: {
+                    // only scrolls when pulling up
+                    if(newPoint.y >= 0)
+                        [self scrollViewDidScroll:newPoint];
+                    break;
+                }
+                case SVInfiniteScrollingDirectionTop: {
+                    if(newPoint.y < 0)
+                        [self scrollViewDidScroll:newPoint];
+                    break;
+                }
+                default:
+                    break;
+            }
         } else if([keyPath isEqualToString:@kstKeypath(self.scrollView,contentSize)]) {
             [self layoutSubviews];
             
@@ -368,6 +445,9 @@ UIEdgeInsets scrollViewOriginalContentInsets;
                 break;
         }
     }
+    
+    // Sets the current direction
+    self.scrollView.currentDirection = self.direction;
     
     if(previousState == SVInfiniteScrollingStateTriggered && newState == SVInfiniteScrollingStateLoading && self.infiniteScrollingHandler && self.enabled)
         self.infiniteScrollingHandler();
