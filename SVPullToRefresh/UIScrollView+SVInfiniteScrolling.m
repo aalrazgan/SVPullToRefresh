@@ -94,6 +94,8 @@ UIEdgeInsets scrollViewOriginalContentInsets;
         view.originalTopInset = self.contentInset.top;
         self.infiniteScrollingView = view;
         self.showsInfiniteScrolling = YES;
+
+        [view resetScrollViewContentInset];
     }
 }
 
